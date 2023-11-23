@@ -4,6 +4,9 @@
   "author": "Kevin Wang <kevmo314@gmail.com>",
   "license": "MIT",
   "unpkg": "dist/geotz.js",
+  "files": [
+    "dist/geotz.js"
+  ],
   "scripts": {
     "prepublishOnly": "npm run build",
     "build": "mkdir -p dist && browserify src/find.ts -p [ tsify ] -d -s GeoTZ > dist/geotz.js"

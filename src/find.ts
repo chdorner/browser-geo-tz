@@ -5,9 +5,15 @@ import Pbf from "pbf";
 
 import { getTimezoneAtSea, oceanZones } from "./oceanUtils";
 
-async function geoData(start: number, end: number) {
+export type Config = {
+  geoTZLookupURL?: string;
+  geoTZDataURL?: string;
+};
+
+async function geoData(start: number, end: number, config?: Config) {
+  const url = config?.geoTZDataURL || "https://cdn.jsdelivr.net/npm/geo-tz@latest/data/geo.dat";
   const response = await fetch(
-    "https://cdn.jsdelivr.net/npm/geo-tz@latest/data/geo.dat",
+    url,
     {
       headers: { Range: `bytes=${start}-${end}` },
     }
@@ -15,10 +21,9 @@ async function geoData(start: number, end: number) {
   return await response.arrayBuffer();
 }
 
-async function tzData() {
-  const response = await fetch(
-    "https://cdn.jsdelivr.net/npm/geo-tz@latest/data/index.json"
-  );
+async function tzData(config?: Config) {
+  const url = config?.geoTZLookupURL || "https://cdn.jsdelivr.net/npm/geo-tz@latest/data/index.json";
+  const response = await fetch(url);
   return await response.json();
 }
 
@@ -31,7 +36,7 @@ let tzDataPromise: Promise<any> | null = null;
  * @param lon longitue (must be >= -180 and <=180)
  * @returns An array of string of TZIDs at the given coordinate.
  */
-export async function find(lat: number, lon: number): Promise<string[]> {
+export async function find(lat: number, lon: number, config?: Config): Promise<string[]> {
   const originalLon = lon;
 
   let err;
@@ -79,7 +84,7 @@ export async function find(lat: number, lon: number): Promise<string[]> {
   };
   let quadPos = "";
   if (!tzDataPromise) {
-    tzDataPromise = tzData();
+    tzDataPromise = tzData(config);
   }
 
   let curTzData = (await tzDataPromise).lookup;
@@ -118,7 +123,8 @@ export async function find(lat: number, lon: number): Promise<string[]> {
       // get exact boundaries
       const bufSlice = await geoData(
         curTzData.pos,
-        curTzData.pos + curTzData.len - 1
+        curTzData.pos + curTzData.len - 1,
+        config,
       );
       const geoJson = decode(new Pbf(bufSlice));
 
